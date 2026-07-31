@@ -7,6 +7,7 @@ import {
   MessageScrollerButton,
   MessageScrollerContent,
   MessageScrollerItem,
+  MessageScrollerProvider,
   MessageScrollerViewport,
 } from '@/components/ui/message-scroller'
 import { Message, MessageContent } from '@/components/ui/message'
@@ -19,7 +20,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import { Badge } from '@/components/ui/badge'
-import { aiSuggestions, aiInsights, getMockAiResponse } from '@/lib/mock-data'
+import { chatWithAssistant } from '@/lib/api'
 
 type ChatMessage = {
   id: string
@@ -32,8 +33,15 @@ const initialMessages: ChatMessage[] = [
     id: 'welcome',
     role: 'assistant',
     content:
-      "Hi Alex! I'm your OpsFlow assistant. I can analyze your cashflow, track overdue invoices, suggest reorders, and surface business insights. What would you like to know?",
+      "Hi! I'm your OpsFlow assistant. I can analyze your cashflow, track overdue invoices, suggest reorders, and surface business insights. What would you like to know?",
   },
+]
+
+const aiSuggestions = [
+  'Summarize my invoices',
+  'Which products need reordering?',
+  'What tasks are open?',
+  'Show me unread notifications',
 ]
 
 export function AiAssistant({ showInsights = true }: { showInsights?: boolean }) {
@@ -42,7 +50,7 @@ export function AiAssistant({ showInsights = true }: { showInsights?: boolean })
   const [isThinking, setIsThinking] = React.useState(false)
 
   const sendMessage = React.useCallback(
-    (text: string) => {
+    async (text: string) => {
       const trimmed = text.trim()
       if (!trimmed || isThinking) return
       const userMessage: ChatMessage = {
@@ -53,18 +61,20 @@ export function AiAssistant({ showInsights = true }: { showInsights?: boolean })
       setMessages((prev) => [...prev, userMessage])
       setInput('')
       setIsThinking(true)
-      // Mock AI response — replace with a real API call later.
-      setTimeout(() => {
+      try {
+        const { response } = await chatWithAssistant(trimmed)
         setMessages((prev) => [
           ...prev,
-          {
-            id: `a-${Date.now()}`,
-            role: 'assistant',
-            content: getMockAiResponse(trimmed),
-          },
+          { id: `a-${Date.now()}`, role: 'assistant', content: response },
         ])
+      } catch {
+        setMessages((prev) => [
+          ...prev,
+          { id: `a-${Date.now()}`, role: 'assistant', content: 'Sorry, I couldn\'t reach the backend. Is the server running?' },
+        ])
+      } finally {
         setIsThinking(false)
-      }, 1200)
+      }
     },
     [isThinking],
   )
@@ -84,54 +94,51 @@ export function AiAssistant({ showInsights = true }: { showInsights?: boolean })
             <TrendingUp className="size-3.5" />
             Business Insights
           </div>
-          <div className="flex flex-col gap-1.5">
-            {aiInsights.map((insight) => (
-              <div key={insight.title} className="rounded-lg border border-border bg-card/50 px-3 py-2">
-                <p className="text-xs font-medium">{insight.title}</p>
-                <p className="text-xs leading-relaxed text-muted-foreground">{insight.detail}</p>
-              </div>
-            ))}
-          </div>
+          <p className="text-xs text-muted-foreground">
+            Ask me about your invoices, inventory, tasks, or notifications for real-time insights.
+          </p>
         </div>
       )}
 
-      <MessageScroller className="flex-1">
-        <MessageScrollerViewport>
-          <MessageScrollerContent className="p-4">
-            {messages.map((message) => (
-              <MessageScrollerItem key={message.id}>
-                <Message align={message.role === 'user' ? 'end' : 'start'}>
-                  <MessageContent>
-                    <Bubble
-                      variant={message.role === 'user' ? 'default' : 'secondary'}
-                      align={message.role === 'user' ? 'end' : 'start'}
-                    >
-                      <BubbleContent>{message.content}</BubbleContent>
-                    </Bubble>
-                  </MessageContent>
-                </Message>
-              </MessageScrollerItem>
-            ))}
-            {isThinking && (
-              <MessageScrollerItem>
-                <Message align="start">
-                  <MessageContent>
-                    <Bubble variant="secondary" align="start">
-                      <BubbleContent>
-                        <span className="flex items-center gap-2 text-muted-foreground">
-                          <Spinner className="size-3.5" />
-                          Analyzing your data…
-                        </span>
-                      </BubbleContent>
-                    </Bubble>
-                  </MessageContent>
-                </Message>
-              </MessageScrollerItem>
-            )}
-          </MessageScrollerContent>
-        </MessageScrollerViewport>
-        <MessageScrollerButton />
-      </MessageScroller>
+      <MessageScrollerProvider>
+        <MessageScroller className="flex-1">
+          <MessageScrollerViewport>
+            <MessageScrollerContent className="p-4">
+              {messages.map((message) => (
+                <MessageScrollerItem key={message.id}>
+                  <Message align={message.role === 'user' ? 'end' : 'start'}>
+                    <MessageContent>
+                      <Bubble
+                        variant={message.role === 'user' ? 'default' : 'secondary'}
+                        align={message.role === 'user' ? 'end' : 'start'}
+                      >
+                        <BubbleContent>{message.content}</BubbleContent>
+                      </Bubble>
+                    </MessageContent>
+                  </Message>
+                </MessageScrollerItem>
+              ))}
+              {isThinking && (
+                <MessageScrollerItem>
+                  <Message align="start">
+                    <MessageContent>
+                      <Bubble variant="secondary" align="start">
+                        <BubbleContent>
+                          <span className="flex items-center gap-2 text-muted-foreground">
+                            <Spinner className="size-3.5" />
+                            Analyzing your data…
+                          </span>
+                        </BubbleContent>
+                      </Bubble>
+                    </MessageContent>
+                  </Message>
+                </MessageScrollerItem>
+              )}
+            </MessageScrollerContent>
+          </MessageScrollerViewport>
+          <MessageScrollerButton />
+        </MessageScroller>
+      </MessageScrollerProvider>
 
       <div className="flex flex-col gap-3 border-t border-border p-4">
         <div className="flex flex-wrap gap-1.5">

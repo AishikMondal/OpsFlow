@@ -12,7 +12,7 @@ export default function DashboardPage() {
     <div className="flex flex-col gap-4 md:gap-6">
       <FadeIn>
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-balance">Good morning, Alex</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-balance">Good morning, Aishik</h1>
           <p className="text-sm text-muted-foreground">
             Here&apos;s what&apos;s happening at Rivera Trading Co. today.
           </p>

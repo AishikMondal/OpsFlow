@@ -1,5 +1,6 @@
 'use client'
 
+import * as React from 'react'
 import { Bar, BarChart, CartesianGrid, XAxis } from 'recharts'
 import {
   Card,
@@ -14,7 +15,7 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from '@/components/ui/chart'
-import { cashflowSeries } from '@/lib/mock-data'
+import { getCashflowSeries, type CashflowSeriesItem } from '@/lib/api'
 
 const chartConfig = {
   inflow: { label: 'Inflow', color: 'var(--chart-1)' },
@@ -22,6 +23,12 @@ const chartConfig = {
 } satisfies ChartConfig
 
 export function CashflowChart() {
+  const [data, setData] = React.useState<CashflowSeriesItem[]>([])
+
+  React.useEffect(() => {
+    getCashflowSeries().then((d) => setData(d.items)).catch(() => {})
+  }, [])
+
   return (
     <Card>
       <CardHeader>
@@ -30,7 +37,7 @@ export function CashflowChart() {
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig} className="h-64 w-full">
-          <BarChart data={cashflowSeries}>
+          <BarChart data={data}>
             <CartesianGrid vertical={false} strokeDasharray="3 3" />
             <XAxis dataKey="week" tickLine={false} axisLine={false} tickMargin={8} />
             <ChartTooltip content={<ChartTooltipContent />} />

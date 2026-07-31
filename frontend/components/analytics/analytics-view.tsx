@@ -1,5 +1,6 @@
 'use client'
 
+import * as React from 'react'
 import { motion } from 'framer-motion'
 import { Activity } from 'lucide-react'
 import { Bar, BarChart, CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts'
@@ -19,7 +20,16 @@ import {
 import { Progress } from '@/components/ui/progress'
 import { RevenueChart } from '@/components/dashboard/revenue-chart'
 import { CashflowChart } from '@/components/dashboard/cashflow-chart'
-import { expenseBreakdown, inventoryTrend, revenueSeries } from '@/lib/mock-data'
+import {
+  getRevenueSeries,
+  getExpenseBreakdown,
+  getInventoryTrend,
+  getHealthMetrics,
+  type RevenueSeriesItem,
+  type ExpenseItem,
+  type InventoryTrendItem,
+  type HealthMetric,
+} from '@/lib/api'
 
 const expenseConfig = {
   amount: { label: 'Amount', color: 'var(--chart-2)' },
@@ -34,17 +44,25 @@ const profitConfig = {
   profit: { label: 'Profit', color: 'var(--chart-1)' },
 } satisfies ChartConfig
 
-const healthMetrics = [
-  { label: 'Cash Position', score: 88 },
-  { label: 'Receivables Health', score: 72 },
-  { label: 'Inventory Efficiency', score: 81 },
-  { label: 'Expense Control', score: 90 },
-]
-
 export function AnalyticsView() {
-  const overallHealth = Math.round(
-    healthMetrics.reduce((sum, m) => sum + m.score, 0) / healthMetrics.length,
-  )
+  const [health, setHealth] = React.useState<{ overall: number; metrics: HealthMetric[] }>({ overall: 0, metrics: [] })
+  const [revenueData, setRevenueData] = React.useState<RevenueSeriesItem[]>([])
+  const [expenseData, setExpenseData] = React.useState<ExpenseItem[]>([])
+  const [inventoryData, setInventoryData] = React.useState<InventoryTrendItem[]>([])
+
+  React.useEffect(() => {
+    Promise.all([
+      getHealthMetrics(),
+      getRevenueSeries(),
+      getExpenseBreakdown(),
+      getInventoryTrend(),
+    ]).then(([h, r, e, i]) => {
+      setHealth(h)
+      setRevenueData(r.items)
+      setExpenseData(e.items)
+      setInventoryData(i.items)
+    }).catch(() => {})
+  }, [])
 
   return (
     <div className="flex flex-col gap-6">
@@ -66,12 +84,12 @@ export function AnalyticsView() {
           <CardContent className="flex flex-col gap-6 lg:flex-row lg:items-center">
             <div className="flex items-baseline gap-2">
               <span className="text-5xl font-semibold tabular-nums text-primary">
-                {overallHealth}
+                {health.overall}
               </span>
               <span className="text-sm text-muted-foreground">/ 100</span>
             </div>
             <div className="grid flex-1 gap-3 sm:grid-cols-2">
-              {healthMetrics.map((m) => (
+              {health.metrics.map((m) => (
                 <div key={m.label} className="flex flex-col gap-1.5">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">{m.label}</span>
@@ -94,7 +112,7 @@ export function AnalyticsView() {
           </CardHeader>
           <CardContent>
             <ChartContainer config={profitConfig} className="h-64 w-full">
-              <LineChart data={revenueSeries} margin={{ left: 0, right: 8 }}>
+              <LineChart data={revenueData} margin={{ left: 0, right: 8 }}>
                 <CartesianGrid vertical={false} strokeDasharray="3 3" />
                 <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} />
                 <YAxis
@@ -102,7 +120,7 @@ export function AnalyticsView() {
                   axisLine={false}
                   tickMargin={4}
                   width={44}
-                  tickFormatter={(v: number) => `$${Math.round(v / 1000)}k`}
+                  tickFormatter={(v: number) => `₹${Math.round(v / 100000)}L`}
                 />
                 <ChartTooltip content={<ChartTooltipContent indicator="line" />} />
                 <Line
@@ -126,7 +144,7 @@ export function AnalyticsView() {
           </CardHeader>
           <CardContent>
             <ChartContainer config={expenseConfig} className="h-64 w-full">
-              <BarChart data={expenseBreakdown} margin={{ left: 0, right: 8 }}>
+              <BarChart data={expenseData} margin={{ left: 0, right: 8 }}>
                 <CartesianGrid vertical={false} strokeDasharray="3 3" />
                 <XAxis dataKey="category" tickLine={false} axisLine={false} tickMargin={8} />
                 <YAxis
@@ -134,7 +152,7 @@ export function AnalyticsView() {
                   axisLine={false}
                   tickMargin={4}
                   width={44}
-                  tickFormatter={(v: number) => `$${Math.round(v / 1000)}k`}
+                  tickFormatter={(v: number) => `₹${Math.round(v / 1000)}k`}
                 />
                 <ChartTooltip content={<ChartTooltipContent />} />
                 <Bar dataKey="amount" fill="var(--color-amount)" radius={[4, 4, 0, 0]} />
@@ -150,7 +168,7 @@ export function AnalyticsView() {
           </CardHeader>
           <CardContent>
             <ChartContainer config={inventoryConfig} className="h-64 w-full">
-              <BarChart data={inventoryTrend} margin={{ left: 0, right: 8 }}>
+              <BarChart data={inventoryData} margin={{ left: 0, right: 8 }}>
                 <CartesianGrid vertical={false} strokeDasharray="3 3" />
                 <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} />
                 <YAxis tickLine={false} axisLine={false} tickMargin={4} width={44} />

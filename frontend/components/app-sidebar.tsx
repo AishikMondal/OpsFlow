@@ -1,5 +1,6 @@
 'use client'
 
+import * as React from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
@@ -28,7 +29,7 @@ import {
   SidebarMenuItem,
 } from '@/components/ui/sidebar'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { notifications } from '@/lib/mock-data'
+import { listNotifications } from '@/lib/api'
 
 const mainNav = [
   { title: 'Dashboard', href: '/', icon: LayoutDashboard },
@@ -47,7 +48,13 @@ const systemNav = [
 
 export function AppSidebar() {
   const pathname = usePathname()
-  const unread = notifications.filter((n) => !n.read).length
+  const [unread, setUnread] = React.useState(0)
+
+  React.useEffect(() => {
+    listNotifications()
+      .then((data) => setUnread(data.items.filter((n) => !n.read).length))
+      .catch(() => {})
+  }, [])
 
   return (
     <Sidebar>
@@ -111,8 +118,8 @@ export function AppSidebar() {
             <AvatarFallback className="bg-primary/15 text-xs text-primary">AR</AvatarFallback>
           </Avatar>
           <div className="flex min-w-0 flex-col">
-            <span className="truncate text-xs font-medium">Alex Rivera</span>
-            <span className="truncate text-xs text-muted-foreground">Rivera Trading Co.</span>
+            <span className="truncate text-xs font-medium">Aishik Mondal</span>
+            <span className="truncate text-xs text-muted-foreground">Crison Hews & Co </span>
           </div>
         </div>
       </SidebarFooter>

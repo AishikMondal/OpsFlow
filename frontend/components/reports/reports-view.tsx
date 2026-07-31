@@ -1,5 +1,6 @@
 'use client'
 
+import * as React from 'react'
 import { motion } from 'framer-motion'
 import { Download, FileText } from 'lucide-react'
 import { toast } from 'sonner'
@@ -12,9 +13,23 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { reports } from '@/lib/mock-data'
+import { listReports, type Report } from '@/lib/api'
 
 export function ReportsView() {
+  const [reports, setReports] = React.useState<Report[]>([])
+  const [loading, setLoading] = React.useState(true)
+
+  React.useEffect(() => {
+    listReports()
+      .then((data) => setReports(data.items))
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
+
+  if (loading) {
+    return <p className="text-sm text-muted-foreground py-8 text-center">Loading reports…</p>
+  }
+
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {reports.map((report, i) => (

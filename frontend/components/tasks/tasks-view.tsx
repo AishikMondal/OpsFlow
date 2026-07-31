@@ -13,7 +13,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
-import { tasks as initialTasks, type Task } from '@/lib/mock-data'
+import { listTasks, updateTask, type Task } from '@/lib/api'
 
 const priorityVariant = {
   high: 'destructive',
@@ -22,14 +22,26 @@ const priorityVariant = {
 } as const
 
 export function TasksView() {
-  const [tasks, setTasks] = React.useState<Task[]>(initialTasks)
+  const [tasks, setTasks] = React.useState<Task[]>([])
+  const [loading, setLoading] = React.useState(true)
 
-  const toggle = (id: string) => {
-    setTasks((prev) =>
-      prev.map((t) =>
-        t.id === id ? { ...t, status: t.status === 'done' ? 'todo' : 'done' } : t,
-      ),
-    )
+  React.useEffect(() => {
+    listTasks()
+      .then((data) => setTasks(data.items))
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
+
+  const toggle = async (id: string) => {
+    const task = tasks.find((t) => t.id === id)
+    if (!task) return
+    const newStatus = task.status === 'done' ? 'todo' : 'done'
+    setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, status: newStatus as Task['status'] } : t)))
+    try {
+      await updateTask(id, { status: newStatus })
+    } catch {
+      setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, status: task.status } : t)))
+    }
   }
 
   const open = tasks.filter((t) => t.status !== 'done')
@@ -40,7 +52,7 @@ export function TasksView() {
       <Card className="glass">
         <CardHeader>
           <CardTitle className="text-base">Open Tasks</CardTitle>
-          <CardDescription>{open.length} tasks need attention</CardDescription>
+          <CardDescription>{loading ? 'Loading…' : `${open.length} tasks need attention`}</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-2">
           {open.map((task, i) => (
@@ -60,7 +72,7 @@ export function TasksView() {
                 <span className="truncate text-sm font-medium">{task.title}</span>
                 <span className="text-xs text-muted-foreground">Due {task.due}</span>
               </div>
-              <Badge variant={priorityVariant[task.priority]} className="capitalize">
+              <Badge variant={priorityVariant[task.priority] || 'secondary'} className="capitalize">
                 {task.priority}
               </Badge>
               <Avatar className="size-7">
@@ -70,13 +82,16 @@ export function TasksView() {
               </Avatar>
             </motion.div>
           ))}
+          {!loading && open.length === 0 && (
+            <p className="text-sm text-muted-foreground py-4 text-center">All caught up!</p>
+          )}
         </CardContent>
       </Card>
 
       <Card className="glass">
         <CardHeader>
           <CardTitle className="text-base">Completed</CardTitle>
-          <CardDescription>{done.length} tasks finished</CardDescription>
+          <CardDescription>{loading ? 'Loading…' : `${done.length} tasks finished`}</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-2">
           {done.map((task) => (
@@ -102,6 +117,9 @@ export function TasksView() {
               </Avatar>
             </div>
           ))}
+          {!loading && done.length === 0 && (
+            <p className="text-sm text-muted-foreground py-4 text-center">No completed tasks yet.</p>
+          )}
         </CardContent>
       </Card>
     </div>

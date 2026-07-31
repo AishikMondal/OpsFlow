@@ -93,7 +93,8 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply text-foreground;
+    background-color: transparent;
   }
 }
 
@@ -102,5 +103,127 @@
     background: oklch(0.2 0.005 260 / 60%);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
+  }
+
+  .aurora-scene {
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  .aurora-blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(90px);
+    will-change: transform;
+  }
+
+  .aurora-blob-1 {
+    width: 34rem;
+    height: 34rem;
+    left: -10%;
+    top: -15%;
+    background: oklch(0.78 0.14 168 / 0.32);
+    animation: aurora-drift 18s ease-in-out infinite;
+  }
+
+  .aurora-blob-2 {
+    width: 28rem;
+    height: 28rem;
+    right: -8%;
+    top: 18%;
+    background: oklch(0.72 0.11 220 / 0.26);
+    animation: aurora-drift 22s ease-in-out infinite reverse;
+  }
+
+  .aurora-blob-3 {
+    width: 26rem;
+    height: 26rem;
+    left: 32%;
+    bottom: -22%;
+    background: oklch(0.8 0.14 80 / 0.18);
+    animation: aurora-drift 26s ease-in-out infinite;
+    animation-delay: -6s;
+  }
+
+  .spatial-grid {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image:
+      linear-gradient(to right, oklch(1 0 0 / 3%) 1px, transparent 1px),
+      linear-gradient(to bottom, oklch(1 0 0 / 3%) 1px, transparent 1px);
+    background-size: 48px 48px;
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 40%, transparent 100%);
+    -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 40%, transparent 100%);
+  }
+
+  .ai-orb {
+    position: absolute;
+    top: -6rem;
+    right: -4rem;
+    width: 14rem;
+    height: 14rem;
+    border-radius: 50%;
+    background: conic-gradient(
+      from 180deg,
+      oklch(0.78 0.14 168),
+      oklch(0.72 0.11 220),
+      oklch(0.8 0.14 80),
+      oklch(0.78 0.14 168)
+    );
+    filter: blur(64px);
+    opacity: 0.35;
+    pointer-events: none;
+    animation: orb-spin 16s linear infinite;
+  }
+
+  .ai-sheen {
+    position: absolute;
+    inset-inline-start: -40%;
+    top: 0;
+    bottom: 0;
+    width: 40%;
+    transform: skewX(-20deg);
+    background: linear-gradient(
+      to right,
+      transparent,
+      oklch(1 0 0 / 8%),
+      transparent
+    );
+    pointer-events: none;
+    animation: sheen-slide 6s ease-in-out infinite;
+  }
+}
+
+@keyframes aurora-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  33% {
+    transform: translate3d(6%, -5%, 0) scale(1.12);
+  }
+  66% {
+    transform: translate3d(-5%, 5%, 0) scale(0.94);
+  }
+}
+
+@keyframes orb-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes sheen-slide {
+  0%,
+  60% {
+    transform: translateX(0) skewX(-20deg);
+  }
+  100% {
+    transform: translateX(380%) skewX(-20deg);
   }
 }

@@ -1,5 +1,6 @@
 'use client'
 
+import * as React from 'react'
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 import {
   Card,
@@ -14,7 +15,7 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from '@/components/ui/chart'
-import { revenueSeries } from '@/lib/mock-data'
+import { getRevenueSeries, type RevenueSeriesItem } from '@/lib/api'
 
 const chartConfig = {
   revenue: { label: 'Revenue', color: 'var(--chart-1)' },
@@ -22,6 +23,12 @@ const chartConfig = {
 } satisfies ChartConfig
 
 export function RevenueChart() {
+  const [data, setData] = React.useState<RevenueSeriesItem[]>([])
+
+  React.useEffect(() => {
+    getRevenueSeries().then((d) => setData(d.items)).catch(() => {})
+  }, [])
+
   return (
     <Card>
       <CardHeader>
@@ -30,7 +37,7 @@ export function RevenueChart() {
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig} className="h-64 w-full">
-          <AreaChart data={revenueSeries} margin={{ left: 0, right: 8 }}>
+          <AreaChart data={data} margin={{ left: 0, right: 8 }}>
             <defs>
               <linearGradient id="fillRevenue" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="var(--color-revenue)" stopOpacity={0.35} />

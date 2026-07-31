@@ -1,6 +1,7 @@
 'use client'
 
-import { FileText, Package, CreditCard, CheckCircle2, Sparkles } from 'lucide-react'
+import * as React from 'react'
+import { FileText, Package, CreditCard, CheckCircle2, Sparkles, Server } from 'lucide-react'
 import {
   Card,
   CardContent,
@@ -8,7 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { activityTimeline, type ActivityItem } from '@/lib/mock-data'
+import { listActivity, type ActivityItem } from '@/lib/api'
 
 const typeIcons: Record<ActivityItem['type'], typeof FileText> = {
   invoice: FileText,
@@ -16,9 +17,18 @@ const typeIcons: Record<ActivityItem['type'], typeof FileText> = {
   payment: CreditCard,
   task: CheckCircle2,
   ai: Sparkles,
+  system: Server,
 }
 
 export function ActivityTimeline() {
+  const [items, setItems] = React.useState<ActivityItem[]>([])
+
+  React.useEffect(() => {
+    listActivity()
+      .then((data) => setItems(data.items))
+      .catch(() => {})
+  }, [])
+
   return (
     <Card>
       <CardHeader>
@@ -26,25 +36,29 @@ export function ActivityTimeline() {
         <CardDescription>Latest events across your workspace</CardDescription>
       </CardHeader>
       <CardContent>
-        <ol className="relative flex flex-col gap-5 before:absolute before:inset-y-1 before:start-[13px] before:w-px before:bg-border">
-          {activityTimeline.map((item) => {
-            const Icon = typeIcons[item.type]
-            return (
-              <li key={item.id} className="relative flex items-start gap-3">
-                <span className="relative z-[1] flex size-7 shrink-0 items-center justify-center rounded-full border border-border bg-card">
-                  <Icon className="size-3.5 text-muted-foreground" />
-                </span>
-                <div className="flex min-w-0 flex-1 flex-col gap-0.5 pt-0.5">
-                  <div className="flex items-baseline justify-between gap-2">
-                    <p className="truncate text-sm font-medium">{item.title}</p>
-                    <span className="shrink-0 text-xs text-muted-foreground">{item.time}</span>
+        {items.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No activity yet.</p>
+        ) : (
+          <ol className="relative flex flex-col gap-5 before:absolute before:inset-y-1 before:start-[13px] before:w-px before:bg-border">
+            {items.map((item) => {
+              const Icon = typeIcons[item.type] || FileText
+              return (
+                <li key={item.id} className="relative flex items-start gap-3">
+                  <span className="relative z-[1] flex size-7 shrink-0 items-center justify-center rounded-full border border-border bg-card">
+                    <Icon className="size-3.5 text-muted-foreground" />
+                  </span>
+                  <div className="flex min-w-0 flex-1 flex-col gap-0.5 pt-0.5">
+                    <div className="flex items-baseline justify-between gap-2">
+                      <p className="truncate text-sm font-medium">{item.title}</p>
+                      <span className="shrink-0 text-xs text-muted-foreground">{item.time}</span>
+                    </div>
+                    <p className="text-xs leading-relaxed text-muted-foreground">{item.detail}</p>
                   </div>
-                  <p className="text-xs leading-relaxed text-muted-foreground">{item.detail}</p>
-                </div>
-              </li>
-            )
-          })}
-        </ol>
+                </li>
+              )
+            })}
+          </ol>
+        )}
       </CardContent>
     </Card>
   )

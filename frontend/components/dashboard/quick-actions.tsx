@@ -30,6 +30,7 @@ export function QuickActions() {
           <Button
             key={action.label}
             variant="outline"
+            nativeButton={false}
             className="h-auto flex-col gap-2 py-4"
             render={<Link href={action.href} />}
           >

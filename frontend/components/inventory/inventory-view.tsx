@@ -29,7 +29,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { products, suppliers, formatCurrency } from '@/lib/mock-data'
+import { listProducts, type Product, type Supplier } from '@/lib/api'
+import { formatCurrency } from '@/lib/mock-data'
 
 const statusBadge = {
   'in-stock': { label: 'In stock', variant: 'secondary' as const },
@@ -40,16 +41,22 @@ const statusBadge = {
 export function InventoryView() {
   const [query, setQuery] = React.useState('')
   const [category, setCategory] = React.useState('all')
+  const [products, setProducts] = React.useState<Product[]>([])
+  const [categories, setCategories] = React.useState<string[]>([])
+  const [suppliers, setSuppliers] = React.useState<Supplier[]>([])
+  const [loading, setLoading] = React.useState(true)
 
-  const categories = Array.from(new Set(products.map((p) => p.category)))
-
-  const filtered = products.filter((p) => {
-    const matchesQuery =
-      p.name.toLowerCase().includes(query.toLowerCase()) ||
-      p.sku.toLowerCase().includes(query.toLowerCase())
-    const matchesCategory = category === 'all' || p.category === category
-    return matchesQuery && matchesCategory
-  })
+  React.useEffect(() => {
+    setLoading(true)
+    listProducts({ category: category !== 'all' ? category : undefined, search: query || undefined })
+      .then((data) => {
+        setProducts(data.items)
+        setCategories(data.categories)
+        setSuppliers(data.suppliers)
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [category, query])
 
   const lowStock = products.filter((p) => p.status === 'low-stock').length
   const outOfStock = products.filter((p) => p.status === 'out-of-stock').length
@@ -117,7 +124,9 @@ export function InventoryView() {
             </Select>
           </div>
 
-          {filtered.length === 0 ? (
+          {loading ? (
+            <p className="text-sm text-muted-foreground py-8 text-center">Loading products…</p>
+          ) : products.length === 0 ? (
             <Empty>
               <EmptyHeader>
                 <EmptyMedia variant="icon">
@@ -143,7 +152,7 @@ export function InventoryView() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((p) => (
+                {products.map((p) => (
                   <TableRow key={p.id}>
                     <TableCell className="font-medium">{p.name}</TableCell>
                     <TableCell className="text-muted-foreground">{p.sku}</TableCell>
@@ -154,8 +163,8 @@ export function InventoryView() {
                       {formatCurrency(p.price)}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={statusBadge[p.status].variant}>
-                        {statusBadge[p.status].label}
+                      <Badge variant={statusBadge[p.status]?.variant || 'secondary'}>
+                        {statusBadge[p.status]?.label || p.status}
                       </Badge>
                     </TableCell>
                   </TableRow>

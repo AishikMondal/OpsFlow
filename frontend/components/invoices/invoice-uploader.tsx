@@ -20,6 +20,8 @@ const processingSteps = [
   { label: 'Finalizing results', icon: CheckCircle2 },
 ]
 
+const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp'])
+
 export function InvoiceUploader() {
   const router = useRouter()
   const [stage, setStage] = React.useState<Stage>('idle')
@@ -35,14 +37,36 @@ export function InvoiceUploader() {
   // (purely cosmetic) step animation timing below.
   const analysisRef = React.useRef<{ result?: InvoiceResult; error?: string } | null>(null)
 
+  // Revoke object URL on unmount to avoid memory leaks.
+  React.useEffect(() => {
+    return () => {
+      if (preview) URL.revokeObjectURL(preview)
+    }
+  }, [preview])
+
   const handleFile = (file: File) => {
     if (!file) return
-    setFileName(file.name)
-    if (file.type.startsWith('image/')) {
-      setPreview(URL.createObjectURL(file))
-    } else {
-      setPreview(null)
+
+    if (!ALLOWED_MIME.has(file.type)) {
+      setErrorMessage('Unsupported file type. Please upload a JPG, PNG, or WEBP image.')
+      setStage('error')
+      return
     }
+
+    if (file.size > 10 * 1024 * 1024) {
+      setErrorMessage('File is too large. Maximum size is 10 MB.')
+      setStage('error')
+      return
+    }
+
+    // Clear any previous result so the results page never shows stale data.
+    sessionStorage.removeItem(RESULT_STORAGE_KEY)
+
+    // Revoke previous preview URL to avoid memory leak.
+    if (preview) URL.revokeObjectURL(preview)
+
+    setFileName(file.name)
+    setPreview(URL.createObjectURL(file))
     setStage('uploading')
     setProgress(0)
     setErrorMessage(null)
@@ -110,6 +134,7 @@ export function InvoiceUploader() {
   }, [stage, activeStep, router])
 
   const reset = () => {
+    if (preview) URL.revokeObjectURL(preview)
     setStage('idle')
     setProgress(0)
     setActiveStep(0)
@@ -117,6 +142,8 @@ export function InvoiceUploader() {
     setFileName('')
     setErrorMessage(null)
     analysisRef.current = null
+    // Reset the file input so the same file can be re-selected.
+    if (inputRef.current) inputRef.current.value = ''
   }
 
   return (
@@ -207,7 +234,7 @@ export function InvoiceUploader() {
                 {preview ? (
                   /* eslint-disable-next-line @next/next/no-img-element */
                   <img
-                    src={preview || '/placeholder.svg'}
+                    src={preview}
                     alt="Invoice preview"
                     className="size-16 rounded-lg border border-border object-cover"
                   />
